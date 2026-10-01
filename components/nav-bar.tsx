@@ -18,20 +18,36 @@ export function NavBar({ profile }: { profile: Profile }) {
       </Link>
       <nav className="flex items-center gap-5 text-sm">
         {canPost && (
-          <Link
-            href="/dashboard/donor/new"
-            className={pathname === '/dashboard/donor/new' ? 'btn btn-primary btn-sm' : 'text-[color:var(--muted)] hover:text-[color:var(--foreground)]'}
-          >
-            Post food
-          </Link>
+          <>
+            <Link
+              href="/dashboard/donor"
+              className={pathname === '/dashboard/donor' ? 'btn btn-primary btn-sm' : 'text-[color:var(--muted)] hover:text-[color:var(--foreground)]'}
+            >
+              My listings
+            </Link>
+            <Link
+              href="/dashboard/donor/new"
+              className={pathname === '/dashboard/donor/new' ? 'btn btn-primary btn-sm' : 'text-[color:var(--muted)] hover:text-[color:var(--foreground)]'}
+            >
+              Post food
+            </Link>
+          </>
         )}
         {canFind && (
-          <Link
-            href="/dashboard/receiver"
-            className={pathname === '/dashboard/receiver' ? 'btn btn-primary btn-sm' : 'text-[color:var(--muted)] hover:text-[color:var(--foreground)]'}
-          >
-            Find food
-          </Link>
+          <>
+            <Link
+              href="/dashboard/receiver"
+              className={pathname === '/dashboard/receiver' ? 'btn btn-primary btn-sm' : 'text-[color:var(--muted)] hover:text-[color:var(--foreground)]'}
+            >
+              Find food
+            </Link>
+            <Link
+              href="/profile?tab=claims"
+              className="text-[color:var(--muted)] hover:text-[color:var(--foreground)]"
+            >
+              My claims
+            </Link>
+          </>
         )}
         <Link href="/map" className="text-[color:var(--muted)] hover:text-[color:var(--foreground)]">
           Live map

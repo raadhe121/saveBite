@@ -4,7 +4,9 @@ import { revalidatePath } from 'next/cache'
 import { createClient } from '@/lib/supabase/server'
 import { requireRole } from '@/lib/session'
 import type { DietaryTag, FoodCategory } from '@/lib/types'
-import { parseQuantityNumber } from '@/lib/distance'
+import { distanceMiles, parseQuantityNumber } from '@/lib/distance'
+import { sendPushToUsers } from '@/lib/push'
+import { createAdminClient } from '@/lib/supabase/admin'
 import type { SupabaseClient } from '@supabase/supabase-js'
 
 async function buildListingFields(
@@ -51,17 +53,57 @@ async function buildListingFields(
   }
 }
 
+// Fire-and-forget: find receivers/volunteers within their own alert radius
+// of the new listing and push them a notification. Failures here must never
+// break listing creation, so errors are swallowed.
+async function notifyNearbyReceivers(listing: { id: string; title: string; lat: number; lng: number }) {
+  try {
+    const admin = createAdminClient()
+    const { data: candidates } = await admin
+      .from('profiles')
+      .select('id, lat, lng, notify_radius_miles')
+      .in('role', ['receiver', 'volunteer'])
+      .eq('notify_new_listings', true)
+      .not('lat', 'is', null)
+      .not('lng', 'is', null)
+
+    if (!candidates || candidates.length === 0) return
+
+    const nearbyIds = candidates
+      .filter(
+        (c) =>
+          distanceMiles(listing.lat, listing.lng, c.lat as number, c.lng as number) <=
+          (c.notify_radius_miles ?? 10)
+      )
+      .map((c) => c.id)
+
+    await sendPushToUsers(nearbyIds, {
+      title: 'New food posted nearby',
+      body: listing.title,
+      url: `/listings/${listing.id}`,
+    })
+  } catch {
+    // Notifications are best-effort.
+  }
+}
+
 export async function createListing(formData: FormData) {
   const { userId } = await requireRole(['donor', 'admin'])
   const supabase = await createClient()
 
   const fields = await buildListingFields(formData, userId, supabase)
 
-  const { error } = await supabase.from('listings').insert({ donor_id: userId, ...fields })
+  const { data, error } = await supabase
+    .from('listings')
+    .insert({ donor_id: userId, ...fields })
+    .select('id, title, lat, lng')
+    .single()
   if (error) throw new Error(error.message)
 
   revalidatePath('/dashboard/donor')
   revalidatePath('/map')
+
+  if (data) await notifyNearbyReceivers(data)
 }
 
 export async function updateListing(listingId: string, formData: FormData) {
@@ -224,6 +266,30 @@ export async function claimListing(listingId: string, quantity?: number) {
 
   revalidatePath('/dashboard/receiver')
   revalidatePath('/map')
+
+  try {
+    const { data: listing } = await supabase
+      .from('listings')
+      .select('title, donor_id')
+      .eq('id', listingId)
+      .single()
+    if (listing) {
+      const { data: donor } = await supabase
+        .from('profiles')
+        .select('notify_claims')
+        .eq('id', listing.donor_id)
+        .single()
+      if (donor?.notify_claims !== false) {
+        await sendPushToUsers([listing.donor_id], {
+          title: 'Your listing was claimed',
+          body: listing.title,
+          url: `/listings/${listingId}`,
+        })
+      }
+    }
+  } catch {
+    // Notifications are best-effort.
+  }
 }
 
 // The receiver themself no longer wants what they claimed.

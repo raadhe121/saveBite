@@ -5,7 +5,7 @@ import { createClient } from '@/lib/supabase/server'
 import { getSessionProfile } from '@/lib/session'
 import { NavBar } from '@/components/nav-bar'
 import { Countdown } from '@/components/countdown'
-import { CheckIcon, MapPinIcon, ClockIcon, NavigationIcon } from '@/components/icons'
+import { CheckIcon, MapPinIcon, ClockIcon, NavigationIcon, ChatIcon } from '@/components/icons'
 import type { Listing } from '@/lib/types'
 import { CopyCodeButton } from './copy-code-button'
 
@@ -21,7 +21,7 @@ export default async function ClaimConfirmationPage({
   const supabase = await createClient()
 
   const [{ data: listing }, { data: claim }] = await Promise.all([
-    supabase.from('listings').select('*').eq('id', id).single(),
+    supabase.from('listings').select('*, profiles:donor_id(org_name, full_name)').eq('id', id).single(),
     supabase
       .from('claims')
       .select('*')
@@ -34,7 +34,10 @@ export default async function ClaimConfirmationPage({
 
   if (!listing || !claim) notFound()
 
-  const l = listing as Listing
+  const l = listing as Listing & {
+    profiles: { org_name: string | null; full_name: string | null } | null
+  }
+  const donorName = l.profiles?.org_name ?? l.profiles?.full_name ?? 'donor'
   const qrDataUrl = claim.pickup_code
     ? await QRCode.toDataURL(claim.pickup_code, {
         width: 320,
@@ -131,7 +134,7 @@ export default async function ClaimConfirmationPage({
       </div>
 
       <div className="page-main" style={{ maxWidth: '48rem', paddingTop: '1.25rem' }}>
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-3 gap-3">
           <a
             className="btn btn-primary"
             target="_blank"
@@ -141,6 +144,10 @@ export default async function ClaimConfirmationPage({
             <NavigationIcon size={15} />
             Get directions
           </a>
+          <Link href={`/listings/${l.id}`} className="btn btn-secondary">
+            <ChatIcon size={15} />
+            Message {donorName}
+          </Link>
           <Link href="/dashboard/receiver" className="btn btn-secondary">
             Back to food near you
           </Link>

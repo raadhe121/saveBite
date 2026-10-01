@@ -43,6 +43,9 @@ export interface Profile {
   operating_hours: string | null
   verification_status: VerificationStatus
   banned_at: string | null
+  notify_radius_miles: number
+  notify_new_listings: boolean
+  notify_claims: boolean
   created_at: string
 }
 
@@ -72,6 +75,14 @@ export interface Listing {
   picked_up_at: string | null
   created_at: string
   profiles?: Pick<Profile, 'org_name' | 'full_name'> | null
+}
+
+export interface Message {
+  id: string
+  listing_id: string
+  sender_id: string
+  body: string
+  created_at: string
 }
 
 export type ClaimStatus = 'pending' | 'completed'

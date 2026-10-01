@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from 'react'
 import type { Listing } from '@/lib/types'
+import { InfoIcon } from '@/components/icons'
 import { ListingRow } from './listing-row'
 
 type TabKey = 'active' | 'claimed' | 'completed' | 'expired'
@@ -38,9 +39,10 @@ export function ListingTabs({ listings }: { listings: Listing[] }) {
           <button
             key={t.key}
             onClick={() => setTab(t.key)}
-            className={`chip ${tab === t.key ? 'chip-active' : ''}`}
+            className={`tab-pill ${tab === t.key ? 'tab-pill-active' : ''}`}
           >
-            {t.label} ({counts[t.key]})
+            {t.label}
+            <span className="tab-pill-count">{counts[t.key]}</span>
           </button>
         ))}
       </div>
@@ -52,6 +54,15 @@ export function ListingTabs({ listings }: { listings: Listing[] }) {
         {shown.map((listing) => (
           <ListingRow key={listing.id} listing={listing} />
         ))}
+
+        {tab === 'claimed' && shown.length > 0 && (
+          <div className="banner banner-info mt-2">
+            <InfoIcon size={18} />
+            <span>
+              When the receiver arrives, check their pickup code, then tap <strong>Confirm pickup</strong>.
+            </span>
+          </div>
+        )}
       </div>
     </div>
   )

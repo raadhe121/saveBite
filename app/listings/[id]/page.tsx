@@ -12,6 +12,8 @@ import { coarseLocation } from '@/lib/privacy'
 import { ClaimButton } from './claim-button'
 import { ListingMap } from './listing-map'
 import { CancelClaimButton } from './cancel-claim-button'
+import { ChatPanel } from './chat-panel'
+import type { Message } from '@/lib/types'
 
 export default async function ListingDetailPage({
   params,
@@ -41,8 +43,33 @@ export default async function ListingDetailPage({
 
   const canClaim = session?.profile.role === 'receiver' || session?.profile.role === 'volunteer'
   const isMine = session != null && session.userId === l.claimed_by
-  const showExactLocation = session != null && (session.userId === l.donor_id || isMine)
+  const isDonor = session != null && session.userId === l.donor_id
+  const showExactLocation = session != null && (isDonor || isMine)
   const donorName = l.profiles?.org_name ?? l.profiles?.full_name ?? 'Donor'
+
+  const canChat = l.claimed_by != null && (isMine || isDonor)
+  let initialMessages: Message[] = []
+  let otherUserName = ''
+  if (canChat && session) {
+    const { data: msgs } = await supabase
+      .from('messages')
+      .select('*')
+      .eq('listing_id', l.id)
+      .order('created_at', { ascending: true })
+      .limit(200)
+    initialMessages = (msgs ?? []) as Message[]
+
+    if (isMine) {
+      otherUserName = donorName
+    } else {
+      const { data: receiverProfile } = await supabase
+        .from('profiles')
+        .select('full_name, org_name')
+        .eq('id', l.claimed_by as string)
+        .single()
+      otherUserName = receiverProfile?.org_name ?? receiverProfile?.full_name ?? 'Receiver'
+    }
+  }
 
   return (
     <div className="page-shell">
@@ -180,6 +207,15 @@ export default async function ListingDetailPage({
                 </div>
               </div>
             </div>
+
+            {canChat && session && (
+              <ChatPanel
+                listingId={l.id}
+                currentUserId={session.userId}
+                otherUserName={otherUserName}
+                initialMessages={initialMessages}
+              />
+            )}
 
             {session && (
               <div className="mt-4">

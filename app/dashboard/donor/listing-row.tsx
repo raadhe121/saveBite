@@ -4,6 +4,7 @@ import { useState, useTransition } from 'react'
 import Link from 'next/link'
 import { cancelListing, confirmPickup, deleteListing, repostListing, unclaimListing } from '@/lib/actions/listings'
 import { LISTING_STATUS_LABEL, type Listing } from '@/lib/types'
+import { CameraIcon, CheckIcon, MapPinIcon } from '@/components/icons'
 
 const statusBadge: Record<Listing['status'], string> = {
   available: 'badge-primary',
@@ -11,6 +12,14 @@ const statusBadge: Record<Listing['status'], string> = {
   picked_up: 'badge-muted',
   expired: 'badge-muted',
   cancelled: 'badge-danger',
+}
+
+const cardAccent: Record<Listing['status'], string> = {
+  available: 'listing-card-available',
+  claimed: 'listing-card-claimed',
+  picked_up: 'listing-card-completed',
+  expired: 'listing-card-expired',
+  cancelled: 'listing-card-expired',
 }
 
 export function ListingRow({ listing }: { listing: Listing }) {
@@ -32,39 +41,57 @@ export function ListingRow({ listing }: { listing: Listing }) {
     })
   }
 
+  const hasProgress = listing.quantity_claimed != null && listing.quantity_total != null
+  const progressPct = hasProgress
+    ? Math.min(100, Math.round(((listing.quantity_claimed as number) / (listing.quantity_total as number)) * 100))
+    : null
+
   return (
-    <div className="list-row" style={{ flexWrap: 'wrap' }}>
-      <div className="flex items-center gap-3">
-        {listing.photo_url && (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img src={listing.photo_url} alt="" className="h-12 w-12 rounded-lg object-cover" />
-        )}
-        <div>
-          <p className="font-medium">{listing.title}</p>
-          <p className="text-sm text-[color:var(--muted)]">
-            {listing.quantity_claimed != null && listing.quantity_total != null
-              ? `${listing.quantity_claimed} of ${listing.quantity_total} ${listing.unit} claimed`
-              : `${listing.quantity} ${listing.unit}`}{' '}
-            · {listing.address}
+    <div className={`listing-card ${cardAccent[listing.status]}`}>
+      <div className="flex items-center gap-4" style={{ minWidth: '14rem' }}>
+        <div className="listing-card-photo">
+          {listing.photo_url ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={listing.photo_url} alt="" />
+          ) : (
+            <CameraIcon size={22} />
+          )}
+        </div>
+
+        <div className="listing-card-body">
+          <div className="flex items-center gap-2 flex-wrap">
+            <h4 className="font-semibold text-lg">{listing.title}</h4>
+            <span className={`badge ${statusBadge[listing.status]}`}>{LISTING_STATUS_LABEL[listing.status]}</span>
+          </div>
+
+          <p className="listing-card-location">
+            <MapPinIcon size={14} />
+            {listing.address}
           </p>
+
+          {hasProgress ? (
+            <div className="listing-card-progress">
+              <div className="progress-track">
+                <div className="progress-fill" style={{ width: `${progressPct}%` }} />
+              </div>
+              <span>
+                {listing.quantity_claimed} of {listing.quantity_total} {listing.unit} claimed
+              </span>
+            </div>
+          ) : (
+            <p className="text-sm mt-1" style={{ color: 'var(--muted)' }}>
+              {listing.quantity} {listing.unit}
+            </p>
+          )}
         </div>
       </div>
-      <div className="flex items-center gap-3">
-        <span className={`badge ${statusBadge[listing.status]}`}>{LISTING_STATUS_LABEL[listing.status]}</span>
 
+      <div className="listing-card-actions">
         {listing.status === 'available' && (
           <>
-            <Link href={`/dashboard/donor/listings/${listing.id}/edit`} className="btn-link text-sm">
+            <Link href={`/dashboard/donor/listings/${listing.id}/edit`} className="btn btn-secondary btn-sm">
               Edit
             </Link>
-            <button
-              disabled={isPending}
-              onClick={() => startTransition(() => deleteListing(listing.id))}
-              className="btn-link text-sm"
-              style={{ color: 'var(--danger)' }}
-            >
-              Delete
-            </button>
             <button
               disabled={isPending}
               onClick={() => startTransition(() => cancelListing(listing.id))}
@@ -73,19 +100,31 @@ export function ListingRow({ listing }: { listing: Listing }) {
             >
               Cancel
             </button>
+            <button
+              disabled={isPending}
+              onClick={() => startTransition(() => deleteListing(listing.id))}
+              className="btn-link text-sm"
+              style={{ color: 'var(--danger)' }}
+            >
+              Delete
+            </button>
           </>
         )}
 
         {listing.status === 'claimed' && !enteringCode && (
           <>
             <button onClick={() => setEnteringCode(true)} className="btn btn-primary btn-sm">
+              <CheckIcon size={14} />
               Confirm pickup
             </button>
+            <Link href={`/listings/${listing.id}`} className="btn btn-secondary btn-sm">
+              Message receiver
+            </Link>
             <button
               disabled={isPending}
               onClick={() => startTransition(() => unclaimListing(listing.id))}
-              className="btn-link text-sm"
-              style={{ color: 'var(--danger)' }}
+              className="btn btn-secondary btn-sm"
+              style={{ color: 'var(--danger)', borderColor: 'var(--danger-soft)' }}
               title="Receiver didn't show up — reopen this listing"
             >
               Cancel claim
@@ -105,7 +144,7 @@ export function ListingRow({ listing }: { listing: Listing }) {
       </div>
 
       {listing.status === 'claimed' && enteringCode && (
-        <div className="flex w-full items-center gap-2 pt-2" style={{ borderTop: '1px solid var(--border)' }}>
+        <div className="flex w-full items-center gap-2 pt-3" style={{ borderTop: '1px solid var(--border)' }}>
           {codeError && <p className="banner banner-error" style={{ padding: '0.4rem 0.7rem' }}>{codeError}</p>}
           <input
             value={code}

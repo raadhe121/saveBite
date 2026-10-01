@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import { createListing } from '@/lib/actions/listings'
+import { scanFoodPhoto } from '@/lib/actions/ai-scan'
 import { DIETARY_TAGS, type DietaryTag, type FoodCategory } from '@/lib/types'
 import { LocationPicker } from '@/components/location-picker'
 import { toLocalInputValue } from '@/components/datetime-field'
@@ -13,6 +14,7 @@ import {
   AlertIcon,
   SearchIcon,
   ImagePlaceholderIcon,
+  SparklesIcon,
 } from '@/components/icons'
 
 const CATEGORIES: { value: FoodCategory; label: string }[] = [
@@ -90,6 +92,10 @@ export function AddFoodForm({
   const [error, setError] = useState<string | null>(null)
   const [isPending, startTransition] = useTransition()
 
+  const [scanning, setScanning] = useState(false)
+  const [scanError, setScanError] = useState<string | null>(null)
+  const [scanApplied, setScanApplied] = useState(false)
+
   function applyPreset(p: Preset) {
     setPreset(p)
     const times = presetTimes(p)
@@ -139,6 +145,32 @@ export function AddFoodForm({
     const file = e.target.files?.[0] ?? null
     setPhotoFile(file)
     setPhotoPreview(file ? URL.createObjectURL(file) : null)
+    setScanError(null)
+    setScanApplied(false)
+  }
+
+  function scanPhoto() {
+    if (!photoFile) return
+    setScanning(true)
+    setScanError(null)
+    setScanApplied(false)
+    const fd = new FormData()
+    fd.set('photo', photoFile)
+    startTransition(async () => {
+      try {
+        const result = await scanFoodPhoto(fd)
+        setTitle(result.title)
+        setCategory(result.category)
+        setQuantity(result.quantity)
+        setUnit(result.unit)
+        setTags(result.dietary_tags)
+        setScanApplied(true)
+      } catch (e) {
+        setScanError(e instanceof Error ? e.message : 'AI scan failed')
+      } finally {
+        setScanning(false)
+      }
+    })
   }
 
   const step1Done = title.trim().length > 0 && quantity > 0
@@ -221,19 +253,37 @@ export function AddFoodForm({
               </div>
 
               <div className="grid grid-cols-[12rem_1fr] gap-4">
-                <label className="photo-dropzone">
-                  {photoPreview ? (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img src={photoPreview} alt="" />
-                  ) : (
-                    <>
-                      <CameraIcon />
-                      <span>Add a food photo</span>
-                      <small>Drag & drop or browse</small>
-                    </>
+                <div className="flex flex-col gap-2">
+                  <label className="photo-dropzone">
+                    {photoPreview ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img src={photoPreview} alt="" />
+                    ) : (
+                      <>
+                        <CameraIcon />
+                        <span>Add a food photo</span>
+                        <small>Drag & drop or browse</small>
+                      </>
+                    )}
+                    <input name="photo" type="file" accept="image/*" onChange={handlePhoto} hidden />
+                  </label>
+
+                  {photoFile && (
+                    <button
+                      type="button"
+                      onClick={scanPhoto}
+                      disabled={scanning}
+                      className="btn btn-secondary btn-sm flex items-center justify-center gap-1.5"
+                    >
+                      <SparklesIcon size={14} />
+                      {scanning ? 'Scanning…' : 'Scan with AI'}
+                    </button>
                   )}
-                  <input name="photo" type="file" accept="image/*" onChange={handlePhoto} hidden />
-                </label>
+                  {scanApplied && !scanning && (
+                    <p className="text-xs text-[color:var(--accent)]">✓ Details filled from photo — check before posting</p>
+                  )}
+                  {scanError && <p className="text-xs" style={{ color: 'var(--danger, #dc2626)' }}>{scanError}</p>}
+                </div>
 
                 <div className="flex flex-col gap-3">
                   <div>

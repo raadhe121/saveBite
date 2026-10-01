@@ -4,9 +4,15 @@ import { createClient } from '@/lib/supabase/server'
 import { NavBar } from '@/components/nav-bar'
 import { ProfileShell } from './profile-shell'
 
-export default async function ProfilePage() {
+export default async function ProfilePage({
+  searchParams,
+}: {
+  searchParams: Promise<{ tab?: string }>
+}) {
   const session = await getSessionProfile()
   if (!session) redirect('/login')
+
+  const { tab } = await searchParams
 
   const supabase = await createClient()
 
@@ -35,7 +41,7 @@ export default async function ProfilePage() {
   return (
     <div className="page-shell">
       <NavBar profile={session.profile} />
-      <ProfileShell profile={session.profile} email={user?.email ?? ''} claims={claims} />
+      <ProfileShell profile={session.profile} email={user?.email ?? ''} claims={claims} initialTab={tab} />
     </div>
   )
 }

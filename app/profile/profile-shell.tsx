@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { CameraSmallIcon } from '@/components/icons'
 import type { Profile } from '@/lib/types'
 import { ProfileForm } from './profile-form'
+import { NotificationSettings } from './notification-settings'
 
 type TabKey = 'personal' | 'claims' | 'notifications' | 'security'
 
@@ -27,16 +28,23 @@ export function ProfileShell({
   profile,
   email,
   claims,
+  initialTab,
 }: {
   profile: Profile
   email: string
   claims: ClaimRow[]
+  initialTab?: string
 }) {
-  const [tab, setTab] = useState<TabKey>('personal')
+  const showClaimsTab = profile.role === 'receiver' || profile.role === 'volunteer'
+  const validTabs: TabKey[] = ['personal', 'claims', 'notifications', 'security']
+  const startTab: TabKey =
+    initialTab && validTabs.includes(initialTab as TabKey) && (initialTab !== 'claims' || showClaimsTab)
+      ? (initialTab as TabKey)
+      : 'personal'
+  const [tab, setTab] = useState<TabKey>(startTab)
 
   const fields = [profile.full_name, profile.phone, profile.address, profile.lat, profile.photo_url]
   const completeness = Math.round((fields.filter(Boolean).length / fields.length) * 100)
-  const showClaimsTab = profile.role === 'receiver' || profile.role === 'volunteer'
   const visibleTabs = TABS.filter((t) => t.key !== 'claims' || showClaimsTab)
 
   return (
@@ -138,17 +146,7 @@ export function ProfileShell({
               </div>
             )}
 
-            {tab === 'notifications' && (
-              <div className="panel">
-                <div className="panel-header">
-                  <h2>Notifications</h2>
-                </div>
-                <p className="text-sm" style={{ color: 'var(--muted)' }}>
-                  You're all caught up. Email notifications aren't set up yet — check your dashboard for
-                  the latest activity.
-                </p>
-              </div>
-            )}
+            {tab === 'notifications' && <NotificationSettings profile={profile} />}
 
             {tab === 'security' && (
               <div className="panel">
