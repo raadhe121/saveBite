@@ -14,6 +14,7 @@ import { ListingMap } from './listing-map'
 import { CancelClaimButton } from './cancel-claim-button'
 import { ChatPanel } from './chat-panel'
 import type { Message } from '@/lib/types'
+import { StarRatingDisplay } from '@/components/star-rating'
 
 export default async function ListingDetailPage({
   params,
@@ -46,6 +47,11 @@ export default async function ListingDetailPage({
   const isDonor = session != null && session.userId === l.donor_id
   const showExactLocation = session != null && (isDonor || isMine)
   const donorName = l.profiles?.org_name ?? l.profiles?.full_name ?? 'Donor'
+
+  const { data: donorRatings } = await supabase.from('ratings').select('stars').eq('ratee_id', l.donor_id)
+  const donorRatingCount = donorRatings?.length ?? 0
+  const donorRatingAverage =
+    donorRatingCount > 0 ? donorRatings!.reduce((s, r) => s + r.stars, 0) / donorRatingCount : 0
 
   const canChat = l.claimed_by != null && (isMine || isDonor)
   let initialMessages: Message[] = []
@@ -265,6 +271,7 @@ export default async function ListingDetailPage({
                   </span>
                   <div>
                     <p className="font-medium">{donorName}</p>
+                    <StarRatingDisplay average={donorRatingAverage} count={donorRatingCount} size={12} />
                     {l.profiles?.business_type && (
                       <p className="text-sm text-[color:var(--muted)]">{l.profiles.business_type}</p>
                     )}

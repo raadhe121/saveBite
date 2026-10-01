@@ -25,23 +25,43 @@ export default async function ProfilePage({
     status: string
     pickup_code: string | null
     listing_id: string
-    listings: { title: string } | { title: string }[] | null
+    listings: { title: string; donor_id: string } | { title: string; donor_id: string }[] | null
   }[] = []
+  const { data: myRatingsReceived } = await supabase
+    .from('ratings')
+    .select('stars')
+    .eq('ratee_id', session.userId)
+  const ratingCount = myRatingsReceived?.length ?? 0
+  const ratingAverage = ratingCount > 0 ? myRatingsReceived!.reduce((s, r) => s + r.stars, 0) / ratingCount : 0
+
+  let ratedListingIds: string[] = []
 
   if (session.profile.role === 'receiver' || session.profile.role === 'volunteer') {
-    const { data } = await supabase
-      .from('claims')
-      .select('id, status, pickup_code, listing_id, listings(title)')
-      .eq('receiver_id', session.userId)
-      .order('created_at', { ascending: false })
-      .limit(20)
+    const [{ data }, { data: myRatings }] = await Promise.all([
+      supabase
+        .from('claims')
+        .select('id, status, pickup_code, listing_id, listings(title, donor_id)')
+        .eq('receiver_id', session.userId)
+        .order('created_at', { ascending: false })
+        .limit(20),
+      supabase.from('ratings').select('listing_id').eq('rater_id', session.userId),
+    ])
     claims = data ?? []
+    ratedListingIds = (myRatings ?? []).map((r) => r.listing_id)
   }
 
   return (
     <div className="page-shell">
       <NavBar profile={session.profile} />
-      <ProfileShell profile={session.profile} email={user?.email ?? ''} claims={claims} initialTab={tab} />
+      <ProfileShell
+        profile={session.profile}
+        email={user?.email ?? ''}
+        claims={claims}
+        ratedListingIds={ratedListingIds}
+        ratingAverage={ratingAverage}
+        ratingCount={ratingCount}
+        initialTab={tab}
+      />
     </div>
   )
 }

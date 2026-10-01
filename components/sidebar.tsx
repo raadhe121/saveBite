@@ -13,6 +13,7 @@ import {
   UsersIcon,
   LogOutIcon,
   ChartIcon,
+  StarIcon,
 } from '@/components/icons'
 import { InviteLinkButton } from '@/components/invite-link-button'
 
@@ -23,6 +24,7 @@ const NAV_ITEMS = [
   { href: '/dashboard/admin#verification', label: 'Verification', icon: ShieldCheckIcon, anchor: true },
   { href: '/dashboard/admin/reports', label: 'Reports', icon: FlagIcon },
   { href: '/dashboard/admin/users', label: 'Users', icon: UsersIcon },
+  { href: '/dashboard/admin/ratings', label: 'Ratings', icon: StarIcon },
   { href: '/dashboard/admin/analytics', label: 'Analytics', icon: ChartIcon },
 ]
 

@@ -12,6 +12,12 @@ const LiveMapInner = dynamic(() => import('./live-map-inner').then((m) => m.Live
   ),
 })
 
-export function LiveMap({ initialListings }: { initialListings: Listing[] }) {
-  return <LiveMapInner initialListings={initialListings} />
+export function LiveMap({
+  initialListings,
+  currentUserId,
+}: {
+  initialListings: Listing[]
+  currentUserId: string | null
+}) {
+  return <LiveMapInner initialListings={initialListings} currentUserId={currentUserId} />
 }

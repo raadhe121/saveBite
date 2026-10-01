@@ -21,8 +21,15 @@ function bucketOf(listing: Listing): TabKey {
   return 'expired'
 }
 
-export function ListingTabs({ listings }: { listings: Listing[] }) {
+export function ListingTabs({
+  listings,
+  ratedListingIds,
+}: {
+  listings: Listing[]
+  ratedListingIds: string[]
+}) {
   const [tab, setTab] = useState<TabKey>('active')
+  const ratedSet = useMemo(() => new Set(ratedListingIds), [ratedListingIds])
 
   const counts = useMemo(() => {
     const c: Record<TabKey, number> = { active: 0, claimed: 0, completed: 0, expired: 0 }
@@ -52,7 +59,7 @@ export function ListingTabs({ listings }: { listings: Listing[] }) {
           <p className="text-sm text-[color:var(--muted)]">Nothing here yet.</p>
         )}
         {shown.map((listing) => (
-          <ListingRow key={listing.id} listing={listing} />
+          <ListingRow key={listing.id} listing={listing} alreadyRated={ratedSet.has(listing.id)} />
         ))}
 
         {tab === 'claimed' && shown.length > 0 && (

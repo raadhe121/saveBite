@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { cancelListing, confirmPickup, deleteListing, repostListing, unclaimListing } from '@/lib/actions/listings'
 import { LISTING_STATUS_LABEL, type Listing } from '@/lib/types'
 import { CameraIcon, CheckIcon, MapPinIcon } from '@/components/icons'
+import { RatePickupButton } from '@/components/rate-pickup-button'
 
 const statusBadge: Record<Listing['status'], string> = {
   available: 'badge-primary',
@@ -22,7 +23,7 @@ const cardAccent: Record<Listing['status'], string> = {
   cancelled: 'listing-card-expired',
 }
 
-export function ListingRow({ listing }: { listing: Listing }) {
+export function ListingRow({ listing, alreadyRated = false }: { listing: Listing; alreadyRated?: boolean }) {
   const [isPending, startTransition] = useTransition()
   const [enteringCode, setEnteringCode] = useState(false)
   const [code, setCode] = useState('')
@@ -130,6 +131,15 @@ export function ListingRow({ listing }: { listing: Listing }) {
               Cancel claim
             </button>
           </>
+        )}
+
+        {listing.status === 'picked_up' && (
+          <RatePickupButton
+            listingId={listing.id}
+            ratee="the receiver"
+            ratingLabel="Rate receiver"
+            alreadyRated={alreadyRated}
+          />
         )}
 
         {(listing.status === 'picked_up' || listing.status === 'expired' || listing.status === 'cancelled') && (

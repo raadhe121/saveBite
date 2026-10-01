@@ -21,6 +21,9 @@ export default async function DonorDashboard() {
 
   const items = (listings ?? []) as Listing[]
 
+  const { data: myRatings } = await supabase.from('ratings').select('listing_id').eq('rater_id', userId)
+  const ratedListingIds = (myRatings ?? []).map((r) => r.listing_id)
+
   const stats = {
     posted: items.length,
     waitingForPickup: items.filter((l) => l.status === 'claimed').length,
@@ -76,7 +79,7 @@ export default async function DonorDashboard() {
           </div>
         </div>
 
-        <ListingTabs listings={items} />
+        <ListingTabs listings={items} ratedListingIds={ratedListingIds} />
       </main>
     </div>
   )

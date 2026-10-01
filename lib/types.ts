@@ -85,6 +85,16 @@ export interface Message {
   created_at: string
 }
 
+export interface Rating {
+  id: string
+  listing_id: string
+  rater_id: string
+  ratee_id: string
+  stars: number
+  comment: string | null
+  created_at: string
+}
+
 export type ClaimStatus = 'pending' | 'completed'
 
 export interface Claim {

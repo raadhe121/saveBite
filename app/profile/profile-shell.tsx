@@ -1,11 +1,13 @@
 'use client'
 
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import Link from 'next/link'
 import { CameraSmallIcon } from '@/components/icons'
 import type { Profile } from '@/lib/types'
 import { ProfileForm } from './profile-form'
 import { NotificationSettings } from './notification-settings'
+import { RatePickupButton } from '@/components/rate-pickup-button'
+import { StarRatingDisplay } from '@/components/star-rating'
 
 type TabKey = 'personal' | 'claims' | 'notifications' | 'security'
 
@@ -21,20 +23,27 @@ type ClaimRow = {
   status: string
   pickup_code: string | null
   listing_id: string
-  listings: { title: string } | { title: string }[] | null
+  listings: { title: string; donor_id: string } | { title: string; donor_id: string }[] | null
 }
 
 export function ProfileShell({
   profile,
   email,
   claims,
+  ratedListingIds,
+  ratingAverage,
+  ratingCount,
   initialTab,
 }: {
   profile: Profile
   email: string
   claims: ClaimRow[]
+  ratedListingIds: string[]
+  ratingAverage: number
+  ratingCount: number
   initialTab?: string
 }) {
+  const ratedSet = useMemo(() => new Set(ratedListingIds), [ratedListingIds])
   const showClaimsTab = profile.role === 'receiver' || profile.role === 'volunteer'
   const validTabs: TabKey[] = ['personal', 'claims', 'notifications', 'security']
   const startTab: TabKey =
@@ -77,6 +86,10 @@ export function ProfileShell({
               <span className="badge badge-info capitalize" style={{ marginTop: '0.4rem' }}>
                 {profile.role}
               </span>
+
+              <div className="mt-2 flex justify-center">
+                <StarRatingDisplay average={ratingAverage} count={ratingCount} />
+              </div>
 
               <div className="mt-4 text-left">
                 <div className="flex items-center justify-between text-sm">
@@ -135,9 +148,19 @@ export function ProfileShell({
                               {c.status === 'completed' ? 'Picked up' : 'Pending pickup'}
                             </p>
                           </div>
-                          <Link href={`/claims/${c.listing_id}`} className="btn-link text-sm">
-                            View
-                          </Link>
+                          <div className="flex items-center gap-3">
+                            {c.status === 'completed' && (
+                              <RatePickupButton
+                                listingId={c.listing_id}
+                                ratee="the donor"
+                                ratingLabel="Rate donor"
+                                alreadyRated={ratedSet.has(c.listing_id)}
+                              />
+                            )}
+                            <Link href={`/claims/${c.listing_id}`} className="btn-link text-sm">
+                              View
+                            </Link>
+                          </div>
                         </div>
                       )
                     })}
