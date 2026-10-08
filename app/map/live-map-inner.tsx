@@ -68,6 +68,8 @@ export function LiveMap({
   const [error, setError] = useState<string | null>(null)
   const [isPending, startTransition] = useTransition()
   const [pendingId, setPendingId] = useState<string | null>(null)
+  const [locating, setLocating] = useState(false)
+  const [locateError, setLocateError] = useState<string | null>(null)
 
   useEffect(() => {
     const supabase = createClient()
@@ -97,22 +99,43 @@ export function LiveMap({
     }
   }, [])
 
-  function locateMe() {
-    if (!('geolocation' in navigator)) return
+  function locateMe(silent = false) {
+    if (!('geolocation' in navigator)) {
+      if (!silent) setLocateError("Your browser doesn't support location access.")
+      return
+    }
+    if (!window.isSecureContext) {
+      if (!silent) {
+        setLocateError('Location only works over HTTPS (or localhost) — open the site securely to use this.')
+      }
+      return
+    }
+    setLocating(true)
+    setLocateError(null)
     navigator.geolocation.getCurrentPosition(
       (pos) => {
         const loc = { lat: pos.coords.latitude, lng: pos.coords.longitude }
         setUserLocation(loc)
         setFlyTarget([loc.lat, loc.lng])
+        setLocating(false)
       },
-      () => {},
+      (err) => {
+        setLocating(false)
+        if (!silent) {
+          setLocateError(
+            err.code === err.PERMISSION_DENIED
+              ? 'Location access is blocked — allow it in your browser settings to find food near you.'
+              : "Couldn't find your location. Try again."
+          )
+        }
+      },
       { enableHighAccuracy: true, timeout: 10000 }
     )
   }
 
   useEffect(() => {
-    locateMe()
-    // Only auto-locate once on mount.
+    locateMe(true)
+    // Only auto-locate once on mount; silent so a denied/first-load prompt doesn't flash an error banner.
   }, [])
 
   const filtered = useMemo(() => {
@@ -297,9 +320,27 @@ export function LiveMap({
           ))}
         </MapContainer>
 
-        <button type="button" onClick={locateMe} className="map-locate-btn" aria-label="Find my location">
-          <CrosshairIcon size={17} />
+        <button
+          type="button"
+          onClick={() => locateMe()}
+          className="map-locate-btn"
+          aria-label="Find my location"
+          title="Find my location"
+          disabled={locating}
+        >
+          <span className={locating ? 'spin' : undefined} style={{ display: 'inline-flex' }}>
+            <CrosshairIcon size={17} />
+          </span>
         </button>
+
+        {locateError && (
+          <div
+            className="map-coords-chip"
+            style={{ left: 'auto', right: '0.7rem', top: '9.3rem', bottom: 'auto', maxWidth: '16rem', color: 'var(--danger)' }}
+          >
+            {locateError}
+          </div>
+        )}
       </div>
     </div>
   )

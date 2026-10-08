@@ -310,3 +310,42 @@ export function BowlIcon({ size = 40 }: IconProps) {
     </svg>
   )
 }
+
+export function StoreIcon({ size = 20 }: IconProps) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" {...base}>
+      <path d="M4 10v9h16v-9" />
+      <path d="M3 10l1.5-5h15L21 10" />
+      <path d="M3 10a3 3 0 0 0 6 0 3 3 0 0 0 6 0 3 3 0 0 0 6 0" />
+      <path d="M10 19v-5h4v5" />
+    </svg>
+  )
+}
+
+export function HeartIcon({ size = 20 }: IconProps) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" {...base}>
+      <path d="M12 20s-7-4.35-9.5-8.8C.86 7.9 2.3 4.5 5.6 4.5c1.9 0 3.3 1 4.4 2.4 1.1-1.4 2.5-2.4 4.4-2.4 3.3 0 4.74 3.4 3.1 6.7C19 15.65 12 20 12 20Z" />
+    </svg>
+  )
+}
+
+export function EyeIcon({ size = 18 }: IconProps) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" {...base}>
+      <path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7-10-7-10-7Z" />
+      <circle cx="12" cy="12" r="2.6" />
+    </svg>
+  )
+}
+
+export function EyeOffIcon({ size = 18 }: IconProps) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" {...base}>
+      <path d="M3 3l18 18" />
+      <path d="M10.6 5.2A10.6 10.6 0 0 1 12 5c6.4 0 10 7 10 7a16.4 16.4 0 0 1-3.6 4.5" />
+      <path d="M6.3 6.6C3.6 8.3 2 12 2 12s3.6 7 10 7c1.4 0 2.6-.3 3.7-.8" />
+      <path d="M9.5 9.8a2.6 2.6 0 0 0 3.7 3.7" />
+    </svg>
+  )
+}
